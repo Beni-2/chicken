@@ -371,6 +371,30 @@
             noise.start();
         }
 
+        function playChickenHitSound() {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+
+            // Cluck/Squawk sound - Modulated Triangle Wave
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, t);
+            // Pitch wobble for "Squawk"
+            osc.frequency.linearRampToValueAtTime(800, t + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(300, t + 0.25);
+
+            gain.gain.setValueAtTime(0.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(t);
+            osc.stop(t + 0.25);
+        }
+
         function playExplosionSound() {
             if (!audioCtx) return; 
             const t = audioCtx.currentTime;
@@ -780,25 +804,28 @@
             group.position.set(xPos, yStart, zPos);
             group.lookAt(0, yStart, 0); 
             
-            // SCALE INCREASE
-            group.scale.set(1.25, 1.25, 1.25); 
+            // INCREASED CHICKEN SIZE (1.6x)
+            group.scale.set(1.6, 1.6, 1.6); 
 
             scene.add(group);
             targets.push(group);
         }
 
         function createExplosion(position) {
-            const count = 40; 
+            // Increased blood splatter amount (60)
+            const count = 60; 
             for(let i=0; i<count; i++) {
                 const particle = new THREE.Mesh(lavaGeometry, matHot);
                 particle.position.copy(position);
                 particle.position.x += (Math.random() - 0.5) * 0.5;
                 particle.position.y += (Math.random() - 0.5) * 0.5;
                 particle.position.z += (Math.random() - 0.5) * 0.5;
+                
+                // Harder (Faster) and Wider Diameter splatters
                 const velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() * 4) + 2, 
-                    (Math.random() - 0.5) * 5
+                    (Math.random() - 0.5) * 10, // Wider diameter (10)
+                    (Math.random() * 5) + 3,    // Harder upward force (3-8)
+                    (Math.random() - 0.5) * 10  // Wider diameter (10)
                 );
                 const rotSpeed = new THREE.Vector3(
                     Math.random() * 10,
@@ -912,6 +939,9 @@
                     hitObject.children.forEach(c => {
                         if(c.material && c.material.emissive) c.material.emissive = new THREE.Color(0xff0000);
                     });
+
+                    // Play Chicken Hit Sound immediately
+                    playChickenHitSound();
 
                     setTimeout(() => {
                         if(!gameActive) return; 
